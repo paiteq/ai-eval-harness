@@ -102,7 +102,7 @@ class _Timer:
     model_name: str
     _start_ns: int = 0
 
-    def __enter__(self) -> "_Timer":
+    def __enter__(self) -> _Timer:
         self._start_ns = time.perf_counter_ns()
         return self
 
