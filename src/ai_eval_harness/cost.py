@@ -7,7 +7,7 @@ keyed by ModelSpec.name so runs are comparable across configs.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Self
 
 from ai_eval_harness.config import ModelSpec

@@ -14,7 +14,6 @@ from ai_eval_harness.cost import CostTracker, ModelCostSummary
 from ai_eval_harness.loaders import load_rows
 from ai_eval_harness.providers import get_generator
 
-
 # Default RAG-style prompt used when the dataset gives us (question, contexts)
 # but no model-specific prompt template. Kept boring on purpose — eval
 # harness is for comparing models, not for prompt engineering.

@@ -11,7 +11,6 @@ from ai_eval_harness.cost import CostTracker, RequestRecord
 from ai_eval_harness.loaders import load_rows
 from ai_eval_harness.runner import run_eval
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_CONFIG = REPO_ROOT / "examples" / "rag-baseline.yaml"
 EXAMPLE_DATA = REPO_ROOT / "examples" / "data" / "rag-baseline.jsonl"

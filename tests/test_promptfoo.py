@@ -14,9 +14,8 @@ import pytest
 import yaml
 
 from ai_eval_harness import promptfoo_adapter
-from ai_eval_harness.config import EvalConfig, ModelSpec
+from ai_eval_harness.config import EvalConfig
 from ai_eval_harness.runner import PerRowOutput, run_eval
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_CONFIG = REPO_ROOT / "examples" / "rag-baseline.yaml"
