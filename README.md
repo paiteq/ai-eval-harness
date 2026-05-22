@@ -36,7 +36,7 @@ We wanted a different shape:
 |---|---|---|
 | **v0.1** | 2026-06 | Ragas + promptfoo wired. One example RAG eval config. CLI runner. Cost + latency tracking. |
 | **v0.2** | 2026-07 | Agent reliability bench (100-task harness, tool-use + multi-step). |
-| **v0.3** | 2026-08 | Public dataset cards on [huggingface.co/paiteq](https://huggingface.co/paiteq). |
+| **v0.3** | 2026-08 | Public dataset cards on [huggingface.co/paiteq-ai](https://huggingface.co/paiteq-ai). |
 | **v1.0** | 2026-Q4 | Stable CLI + Python API. Versioned benchmark snapshots. |
 
 Track milestones in [GitHub issues](https://github.com/paiteq/ai-eval-harness/issues) and [releases](https://github.com/paiteq/ai-eval-harness/releases) once they ship.
