@@ -151,15 +151,7 @@ def _write_config(
                     "ground_truth": out.ground_truth,
                     "model": model_name,
                 },
-                "assert": [
-                    # The answer should contain at least the first 3 words of
-                    # the ground truth — coarse but catches "Not in context."
-                    # outputs when the context actually has the answer.
-                    {
-                        "type": "contains",
-                        "value": " ".join(out.ground_truth.split()[:3]),
-                    },
-                ],
+                "assert": _assertions_for(config, out),
             })
 
     promptfoo_config = {
@@ -171,6 +163,47 @@ def _write_config(
         "tests": tests,
     }
     out_path.write_text(yaml.safe_dump(promptfoo_config, sort_keys=False))
+
+
+def _assertions_for(config: EvalConfig, out: PerRowOutput) -> list[dict]:
+    """Build the promptfoo assertion list for one row.
+
+    v0.1 default: a coarse `contains` check against the first 3 ground-truth
+    words — catches "Not in context." outputs.
+
+    v0.2 (scaffold): two opt-in assertion types resolved from the config's
+    metrics.promptfoo list. Both are stubs — the assertion-name → promptfoo
+    config mapping ships in v0.2, but the LLM-graded judge wiring lands with
+    the 2026-Q3 publish.
+
+    - `tool-args-llm-graded`: LLM judge grades whether the answer/trajectory's
+      tool-call arguments match the gold trajectory's. Used by the agent
+      reliability bench, not RAG eval.
+    - `answer-regex`: opt-in regex matcher for templated outputs. Pattern is
+      drawn from the metric name suffix (e.g. `answer-regex:^\\d+`).
+    """
+    asserts: list[dict] = [
+        {
+            "type": "contains",
+            "value": " ".join(out.ground_truth.split()[:3]),
+        },
+    ]
+    for metric in config.metrics.promptfoo:
+        if metric == "tool-args-llm-graded":
+            asserts.append({
+                "type": "llm-rubric",
+                "value": (
+                    "The model's tool-call arguments match the gold "
+                    "trajectory's arguments at the field level. Wrong "
+                    "arguments to the right tool is a failure."
+                ),
+                # v0.2 scaffold — judge model and rubric prompt are placeholders;
+                # the 2026-Q3 publish locks both in.
+                "provider": "anthropic:claude-sonnet-4-6",
+            })
+        elif metric.startswith("answer-regex:"):
+            asserts.append({"type": "regex", "value": metric.split(":", 1)[1]})
+    return asserts
 
 
 def _parse_output(output_path: Path) -> dict[str, dict[str, float]]:

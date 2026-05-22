@@ -1,0 +1,57 @@
+# Agent reliability eval — v0.2 scaffold config.
+#
+# Mirrors the six-axis rubric published at:
+#   https://www.getwidget.dev/blog/ai-agent-reliability-evaluation/
+#
+# v0.2 ships the API + a 3-task smoke set (one per family below). The full
+# 100-task suite + verifier runtimes land alongside the 2026-Q3 publish at:
+#   https://www.getwidget.dev/benchmarks/agent-reliability-2026-q3/
+#
+# Run:
+#   ai-eval run examples/agent-baseline.yaml --no-score --out runs/
+#   (--no-score is required until verifier runtimes land in v0.3)
+
+name: agent-baseline
+description: >-
+  Six-axis agent reliability rubric, smoke set. Three tasks across three of
+  the four published families. v0.2 scaffold only.
+
+dataset:
+  source: examples/data/agent-baseline.jsonl
+  max_rows: null
+  columns:
+    question: task
+    ground_truth: gold
+    contexts: tools
+
+models:
+  - name: claude-sonnet-4-6
+    provider: anthropic
+    model_id: claude-sonnet-4-6
+    input_cost_per_mtok: 3.00
+    output_cost_per_mtok: 15.00
+
+  - name: claude-opus-4-7
+    provider: anthropic
+    model_id: claude-opus-4-7
+    input_cost_per_mtok: 15.00
+    output_cost_per_mtok: 75.00
+
+# Per-buyer axis weights. Defaults are flat (1.0 each). Override for a
+# regulated workflow (push refusal_calibration up) or a high-volume retrieval
+# agent (push cost_per_success up).
+weights:
+  task_completion: 1.0
+  trajectory_length: 1.0
+  tool_call_accuracy: 1.0
+  recovery_after_error: 1.0
+  refusal_calibration: 1.0
+  cost_per_success: 1.0
+
+metrics:
+  # Ragas isn't applicable to agent trajectories; left empty on purpose.
+  ragas: []
+  # LLM-graded promptfoo assertions land in v0.2 as the secondary lane for
+  # argument-level grading on free-form tool inputs.
+  promptfoo:
+    - tool-args-llm-graded
