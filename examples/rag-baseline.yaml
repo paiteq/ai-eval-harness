@@ -53,3 +53,9 @@ metrics:
     - context_recall
     - faithfulness
     - answer_relevancy
+  # promptfoo is run as a parallel assertion lane against the precomputed
+  # answers (no extra API spend). v0.1 wires one default check
+  # (the answer must contain a snippet of the ground truth). Requires
+  # `npm i -g promptfoo` — skipped silently if the binary is missing.
+  promptfoo:
+    - contains-ground-truth

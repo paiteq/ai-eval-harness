@@ -1,5 +1,5 @@
 """Eval runner. Orchestrates: load dataset → generate per model → score via
-Ragas → record cost → emit report."""
+Ragas (and optionally promptfoo) → record cost → emit report."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ai_eval_harness import promptfoo_adapter
 from ai_eval_harness.config import EvalConfig, ModelSpec
 from ai_eval_harness.cost import CostTracker, ModelCostSummary
 from ai_eval_harness.loaders import load_rows
@@ -47,12 +48,22 @@ class EvalResult:
     ragas_scores: dict[str, dict[str, float]] = field(default_factory=dict)
     """ragas_scores[model_name][metric_name] = score"""
 
+    promptfoo_scores: dict[str, dict[str, float]] = field(default_factory=dict)
+    """promptfoo_scores[model_name][metric_name] = pass_rate (0..1).
+    Empty when the promptfoo binary isn't installed or metrics.promptfoo is empty."""
+
+    promptfoo_note: str | None = None
+    """Human-readable status (e.g. "promptfoo binary not on PATH; skipped").
+    Set when promptfoo was requested but didn't run."""
+
     def to_json(self) -> dict[str, Any]:
         return {
             "config": self.config.model_dump(),
             "rows": self.rows,
             "cost": [c.to_row() for c in self.cost],
             "ragas_scores": self.ragas_scores,
+            "promptfoo_scores": self.promptfoo_scores,
+            "promptfoo_note": self.promptfoo_note,
             "outputs_preview": [
                 {
                     "model": o.model_name,
@@ -72,9 +83,21 @@ class EvalResult:
         return path
 
 
-def run_eval(config: EvalConfig, *, score: bool = True) -> EvalResult:
-    """Run an eval end-to-end. When `score=False`, the Ragas scoring step is
-    skipped — useful for smoke tests that don't have judge-model credentials."""
+def run_eval(
+    config: EvalConfig,
+    *,
+    score: bool = True,
+    work_dir: str | Path | None = None,
+) -> EvalResult:
+    """Run an eval end-to-end. When `score=False`, the Ragas + promptfoo
+    scoring steps are skipped — useful for smoke tests that don't have
+    judge-model credentials.
+
+    `work_dir` is where promptfoo's generated config + output JSON land.
+    Defaults to a per-run temp directory; pass an explicit path when you
+    want to inspect the promptfoo artifacts after the run."""
+    import tempfile
+
     rows = load_rows(config.dataset)
     tracker = CostTracker(config.models)
     outputs: list[PerRowOutput] = []
@@ -86,12 +109,26 @@ def run_eval(config: EvalConfig, *, score: bool = True) -> EvalResult:
     if score and config.metrics.ragas:
         ragas_scores = _score_with_ragas(config, outputs)
 
+    promptfoo_scores: dict[str, dict[str, float]] = {}
+    promptfoo_note: str | None = None
+    if score and config.metrics.promptfoo:
+        wd = Path(work_dir) if work_dir else Path(tempfile.mkdtemp(prefix="ai-eval-pf-"))
+        pf = promptfoo_adapter.run(config, outputs, work_dir=wd / "promptfoo")
+        if not pf.available:
+            promptfoo_note = "promptfoo binary not on PATH; install via `npm i -g promptfoo`"
+        elif pf.error:
+            promptfoo_note = f"promptfoo error: {pf.error}"
+        elif pf.scores:
+            promptfoo_scores = pf.scores
+
     return EvalResult(
         config=config,
         rows=len(rows),
         outputs=outputs,
         cost=tracker.summary(),
         ragas_scores=ragas_scores,
+        promptfoo_scores=promptfoo_scores,
+        promptfoo_note=promptfoo_note,
     )
 
 

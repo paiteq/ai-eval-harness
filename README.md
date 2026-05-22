@@ -29,15 +29,16 @@ We wanted a different shape:
 | Faithfulness, answer relevancy | Ragas | ✅ v0.1 |
 | Cost + latency tracking per-run | custom | ✅ v0.1 |
 | Local-echo provider (no-credentials smoke path) | custom | ✅ v0.1 |
-| Prompt-level eval, regression suites | promptfoo | 🟡 wiring in v0.1, full eval flow v0.2 |
+| Prompt-level assertions over precomputed answers | promptfoo | ✅ v0.1 |
+| LLM-graded promptfoo assertions, regex/contains matchers | promptfoo | ⚪ v0.2 |
 | Agent reliability (tool-use, multi-step, error recovery) | custom rubric | ⚪ v0.2 |
 
 ## Roadmap
 
 | Milestone | Date | What ships |
 |---|---|---|
-| **v0.1** | ✅ 2026-05 (shipped) | Ragas wiring. CLI runner. Cost + latency tracking. Local-echo smoke provider. One example RAG config. |
-| **v0.2** | 2026-07 | Agent reliability bench (100-task harness, tool-use + multi-step). promptfoo full eval flow. |
+| **v0.1** | ✅ 2026-05 (shipped) | Ragas wiring. promptfoo assertion lane. CLI runner. Cost + latency tracking. Local-echo smoke provider. One example RAG config. |
+| **v0.2** | 2026-07 | Agent reliability bench (100-task harness, tool-use + multi-step). LLM-graded promptfoo assertions. |
 | **v0.3** | 2026-08 | Public dataset cards on [huggingface.co/paiteq-ai](https://huggingface.co/paiteq-ai). PyPI release. |
 | **v1.0** | 2026-Q4 | Stable CLI + Python API. Versioned benchmark snapshots. |
 
@@ -106,11 +107,22 @@ metrics:
     - context_recall
     - faithfulness
     - answer_relevancy
+  promptfoo:                 # optional, requires `npm i -g promptfoo`
+    - contains-ground-truth
 ```
 
 Each row in the dataset needs three fields: `question`, `ground_truth`, and a
 `contexts` list. Retrieval is precomputed in v0.1 — bring your own retriever
 and pass the top-K chunks per question. End-to-end retriever wiring lands later.
+
+### Two scoring lanes (Ragas + promptfoo)
+
+The harness runs scoring in two parallel lanes:
+
+1. **Ragas** — semantic metrics (faithfulness, answer relevancy, context precision/recall). Needs a judge LLM (typically OpenAI). Runs on every row of the dataset.
+2. **promptfoo** — assertion-based pass/fail over the precomputed answers. v0.1 wires one default assertion (the answer must contain a snippet of the ground truth). No extra API spend — promptfoo evaluates the already-generated answers via the `echo` provider, it doesn't re-run the LLMs. Requires the `promptfoo` Node binary on PATH (`npm i -g promptfoo`); skipped silently otherwise. LLM-graded assertions + regex/contains matchers land in v0.2.
+
+Lane results land in separate fields on the `EvalResult`: `ragas_scores` and `promptfoo_scores`. The CLI prints both tables side-by-side. The JSON report under `runs/<config-name>.json` carries both, plus `promptfoo_note` if the lane was requested but skipped.
 
 ## License
 
