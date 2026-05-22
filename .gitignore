@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local runs / output
+runs/
+*.local.yaml
+.env
+.env.*
+!.env.example
+
+# Promptfoo
+promptfoo-cache/
+.promptfoo/
+
+# Hugging Face
+.cache/

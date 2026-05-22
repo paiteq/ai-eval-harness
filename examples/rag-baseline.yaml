@@ -1,0 +1,55 @@
+# RAG baseline eval — Claude Sonnet 4.6 vs GPT-5 on a tiny reproducible corpus.
+#
+# This is the smallest config that exercises the full pipeline. It uses the
+# bundled corpus under examples/data/rag-baseline.jsonl (10 rows about the
+# harness itself, so anyone can clone + run without hunting for a dataset).
+#
+# Run:
+#   ai-eval run examples/rag-baseline.yaml --out runs/
+#
+# Real Paiteq benchmarks (rag-2026-q2, agent-reliability-2026-q3) live in
+# their own configs and point at HuggingFace-hosted corpora. This one stays
+# local on purpose so the harness has a no-credentials smoke path.
+
+name: rag-baseline
+description: Tiny reproducible RAG baseline. 10 rows, 2 models, RAG-core Ragas metrics.
+
+dataset:
+  source: examples/data/rag-baseline.jsonl
+  max_rows: 10
+  columns:
+    question: question
+    ground_truth: ground_truth
+    contexts: contexts
+
+retrieval:
+  strategy: precomputed
+  top_k: 3
+
+models:
+  - name: claude-sonnet-4-6
+    provider: anthropic
+    model_id: claude-sonnet-4-6
+    input_cost_per_mtok: 3.00
+    output_cost_per_mtok: 15.00
+
+  - name: gpt-5
+    provider: openai
+    model_id: gpt-5
+    input_cost_per_mtok: 2.50
+    output_cost_per_mtok: 10.00
+
+  # Local echo runs without API keys — useful for verifying the harness
+  # itself before plugging in real models.
+  - name: local-echo
+    provider: local
+    model_id: echo
+    input_cost_per_mtok: 0
+    output_cost_per_mtok: 0
+
+metrics:
+  ragas:
+    - context_precision
+    - context_recall
+    - faithfulness
+    - answer_relevancy
